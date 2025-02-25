@@ -173,6 +173,8 @@ public class IntegralCalculatorApp extends JFrame {
           int selectedRow = table.getSelectedRow();
 
           tableModel.removeRow(selectedRow);
+
+          recIntegral.remove(selectedRow);
     }
 
     private void calculateIntegral() {

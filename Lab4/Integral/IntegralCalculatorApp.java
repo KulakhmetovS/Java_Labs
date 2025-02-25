@@ -7,8 +7,18 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.JOptionPane;
 
+import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import Integral.RecIntegral;
 
@@ -118,10 +128,45 @@ public class IntegralCalculatorApp extends JFrame {
         gbc.insets = new Insets(10, 120, 10, 5); // Отступы для кнопок
         buttonPanel.add(fullButton, gbConst);
 
+        // Кнопки работы с файлами
+
+        JPanel buttonFilePanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbConstant = new GridBagConstraints();
+        gbConstant.fill = GridBagConstraints.HORIZONTAL;
+        gbConstant.weightx = 1;
+
+        JButton writeToFileButton = new JButton("Записать в файл");
+        gbConstant.gridy = 0;
+        gbConstant.gridx = 0;
+        buttonFilePanel.add(writeToFileButton, gbConstant);
+
+        JButton readFromFileButton = new JButton("Считать из файла");
+        gbConstant.gridy = 0;
+        gbConstant.gridx = 1;
+        buttonFilePanel.add(readFromFileButton, gbConstant);
+
+        JButton writeToBinaryFileButton = new JButton("Записать в бинарный файл");
+        gbConstant.gridy = 0;
+        gbConstant.gridx = 2;
+        buttonFilePanel.add(writeToBinaryFileButton , gbConstant);
+
+        JButton readFromBinaryFileButton = new JButton("Считать из бинарного файла");
+        readFromBinaryFileButton.setPreferredSize(new Dimension(100, 25)); // Размер кнопки
+        gbConstant.gridy = 0;
+        gbConstant.gridx = 3;
+        buttonFilePanel.add(readFromBinaryFileButton, gbConstant);
+
         // Добавление компонентов в окно
-        add(inputPanel, BorderLayout.NORTH);
+
+        JPanel northPanel = new JPanel();
+        northPanel.setLayout(new BoxLayout(northPanel, BoxLayout.Y_AXIS)); // Вертикал
+
+        northPanel.add(buttonFilePanel);
+        northPanel.add(inputPanel);
+        add(northPanel, BorderLayout.NORTH);
         add(new JScrollPane(table), BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
+
 
         // Обработчики событий для кнопок
         addButton.addActionListener(new ActionListener() {
@@ -156,6 +201,34 @@ public class IntegralCalculatorApp extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 loadNotes();
+            }
+        });
+
+        readFromFileButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                readDataFromFile(1);
+            }
+        });
+
+        writeToFileButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                writeDataToFile(1);
+            }
+        });
+
+        writeToBinaryFileButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                writeDataToFile(2);
+            }
+        });
+
+        readFromBinaryFileButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                readDataFromFile(2);
             }
         });
     }
@@ -233,6 +306,153 @@ public class IntegralCalculatorApp extends JFrame {
 
         tableModel.addRow(new Object[]{lowerBound, upperBound, step, result});  //Заполнение строки таблицы полученными данными
       }
+    }
+
+    private void readDataFromFile(int flag) {
+      JFrame frame = new JFrame("Выбор файла с данными");
+
+      JFileChooser fileChooser = new JFileChooser();
+      // Устанавливаем заголовок
+      int userSelection = fileChooser.showOpenDialog(frame);
+      // Проверяем, был ли выбран файл
+      if (userSelection == JFileChooser.APPROVE_OPTION) {
+        tableModel.setRowCount(0);
+        recIntegral.clear();
+        File fileToOpen = fileChooser.getSelectedFile();
+        if (flag == 1) {
+          JSONparse(fileToOpen.getAbsolutePath());
+        }
+        if (flag == 2) {
+          SerializeParse(fileToOpen.getAbsolutePath());
+        }
+
+      } else {
+        System.out.println("Выбор файла отменен.");
+      }
+    }
+
+    private void JSONparse(String filePath) {
+      String regex = "\"(lowerBound|upperBound|step|result)\":\\s*(\\d+\\.\\d+)";
+
+
+      double lowerBound = 0;
+      double upperBound = 0;
+      double step = 0;
+      double result = 0;
+
+      try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            int counter = 0;
+            // Читаем файл построчно
+            while ((line = br.readLine()) != null) {
+                Pattern pattern = Pattern.compile(regex);
+                Matcher matcher = pattern.matcher(line);
+
+                while (matcher.find()) {
+                  counter++;
+                  String key = matcher.group(1); // Имя ключа
+                  double value = Double.parseDouble(matcher.group(2)); // Значение ключа
+
+                  switch (key) {
+                      case "lowerBound":
+                          lowerBound = value;
+                          break;
+                      case "upperBound":
+                          upperBound = value;
+                          break;
+                      case "step":
+                          step = value;
+                          break;
+                      case "result":
+                          result = value;
+                          break;
+                  }
+
+                  if (counter == 4) {
+                    tableModel.addRow(new Object[]{lowerBound, upperBound, step, result});
+
+                    recIntegral.add(new RecIntegral(lowerBound, upperBound, step).setResult(result));
+
+                    counter = 0;
+                  }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace(); // Обрабатываем возможные исключения
+        }
+    }
+
+    private void SerializeParse(String filePath) {
+    try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
+        @SuppressWarnings("unchecked") // Подавляем предупреждение о небезопасном приведении типов
+        List<RecIntegral> deserializedList = (List<RecIntegral>) ois.readObject();
+        recIntegral = deserializedList;
+        loadNotes();
+    } catch (IOException | ClassNotFoundException e) {
+        e.printStackTrace();
+    }
+  }
+
+    private void writeDataToFile(int flag) {
+      JFrame frame = new JFrame("Сохранение в файл");
+
+      JFileChooser fileChooser = new JFileChooser();
+      // Устанавливаем заголовок
+      int userSelection = fileChooser.showOpenDialog(frame);
+      // Проверяем, был ли выбран файл
+      if (userSelection == JFileChooser.APPROVE_OPTION) {
+        File fileToOpen = fileChooser.getSelectedFile();
+        if (flag == 1) {
+          JSONstringify(fileToOpen.getAbsolutePath());
+        }
+        if (flag == 2) {
+            SerializeStringify(fileToOpen.getAbsolutePath());
+        }
+
+        // JSONparse(fileToOpen.getAbsolutePath());
+      } else {
+        System.out.println("Выбор файла отменен.");
+      }
+    }
+
+    private void JSONstringify(String filePath) {
+      try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+        writer.write("[\n"); // Начало JSON массива
+
+        for (int i = 0; i < recIntegral.size(); i++) {  // Получение записей из коллекции
+            double lowerBound = recIntegral.get(i).getLowerBound();
+            double upperBound = recIntegral.get(i).getUpperBound();
+            double step = recIntegral.get(i).getStep();
+            double result = recIntegral.get(i).getResult();
+
+            // Форматируем запись в JSON
+            writer.write("  {\n");
+            writer.write("    \"lowerBound\": " + lowerBound + ",\n");
+            writer.write("    \"upperBound\": " + upperBound + ",\n");
+            writer.write("    \"step\": " + step + ",\n");
+            writer.write("    \"result\": " + result + "\n");
+            writer.write("  }");
+
+            // Если это не последняя запись, добавляем запятую
+            if (i < recIntegral.size() - 1) {
+                writer.write(",\n");
+            } else {
+                writer.write("\n");
+            }
+        }
+
+        writer.write("]"); // Конец JSON массива
+      } catch (IOException e) {
+        e.printStackTrace(); // Обрабатываем возможные исключения
+      }
+    }
+
+    private void SerializeStringify(String filePath) {
+      try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
+            oos.writeObject(recIntegral);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     // Метод для вычисления интеграла методом трапеций
