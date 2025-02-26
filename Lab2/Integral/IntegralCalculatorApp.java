@@ -6,6 +6,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -90,8 +91,8 @@ public class IntegralCalculatorApp extends JFrame {
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // Только первые три колонки редактируемы
-                return column < 3;
+                // колонки не редактируемы
+                return false;
             }
         };
         table = new JTable(tableModel);
@@ -197,14 +198,26 @@ public class IntegralCalculatorApp extends JFrame {
     private void loadNotes() {
       tableModel.setRowCount(0);
 
-      for (int i = 0; i < recIntegral.size(); i++) {  //Получение записей из коллекции
+      Iterator<RecIntegral> recIntegralIterator = recIntegral.iterator();
+
+      while (recIntegralIterator.hasNext()) {
+        RecIntegral rec = recIntegralIterator.next(); // Получаем следующий элемент
+        double lowerBound = rec.getLowerBound();
+        double upperBound = rec.getUpperBound();
+        double step = rec.getStep();
+        double result = rec.getResult();
+
+        tableModel.addRow(new Object[]{lowerBound, upperBound, step, result});
+      }
+
+      /* for (int i = 0; i < recIntegral.size(); i++) {  //Получение записей из коллекции
         double lowerBound = recIntegral.get(i).getLowerBound();
         double upperBound = recIntegral.get(i).getUpperBound();
         double step = recIntegral.get(i).getStep();
         double result = recIntegral.get(i).getResult();
 
         tableModel.addRow(new Object[]{lowerBound, upperBound, step, result});  //Заполнение строки таблицы полученными данными
-      }
+      } */
     }
 
     // Метод для вычисления интеграла методом трапеций

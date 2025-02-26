@@ -15,6 +15,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 
+import java.util.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -267,6 +268,14 @@ public class IntegralCalculatorApp extends JFrame {
         (step < 0.000001 || step > 1000000)) {
         throw new InvalidInputException("Значения должны быть в диапазоне от 0.000001 до 1000000");
       }
+
+      if (lowerBound >= upperBound) {
+        throw new InvalidInputException("Верхняя граница должна больше выше нижней");
+      }
+
+      if (step > upperBound - lowerBound) {
+        throw new InvalidInputException("Шаг должен быть меньше интервала");
+      }
     }
 
     // Метод для удаления выделенной строки из таблицы
@@ -298,13 +307,16 @@ public class IntegralCalculatorApp extends JFrame {
     private void loadNotes() {
       tableModel.setRowCount(0);
 
-      for (int i = 0; i < recIntegral.size(); i++) {  //Получение записей из коллекции
-        double lowerBound = recIntegral.get(i).getLowerBound();
-        double upperBound = recIntegral.get(i).getUpperBound();
-        double step = recIntegral.get(i).getStep();
-        double result = recIntegral.get(i).getResult();
+      Iterator<RecIntegral> recIntegralIterator = recIntegral.iterator();
 
-        tableModel.addRow(new Object[]{lowerBound, upperBound, step, result});  //Заполнение строки таблицы полученными данными
+      while (recIntegralIterator.hasNext()) {
+        RecIntegral rec = recIntegralIterator.next(); // Получаем следующий элемент
+        double lowerBound = rec.getLowerBound();
+        double upperBound = rec.getUpperBound();
+        double step = rec.getStep();
+        double result = rec.getResult();
+
+        tableModel.addRow(new Object[]{lowerBound, upperBound, step, result});
       }
     }
 

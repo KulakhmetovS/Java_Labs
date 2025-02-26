@@ -83,8 +83,8 @@ public class IntegralCalculatorApp extends JFrame {
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // Только первые три колонки редактируемы
-                return column < 3;
+                // колонки не редактируемы
+                return false;
             }
         };
         table = new JTable(tableModel);
