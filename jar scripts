@@ -1,0 +1,6 @@
+javac Runnable/TrapezoidCalculator.java UDPClient.java
+
+jar cfm UDPClient.jar MANIFEST.MF UDPClient.class Runnable/TrapezoidCalculator.class
+
+ps aux | grep UDPClient
+
