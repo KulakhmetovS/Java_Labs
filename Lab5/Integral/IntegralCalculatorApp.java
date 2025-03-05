@@ -296,7 +296,12 @@ public class IntegralCalculatorApp extends JFrame {
         double upperBound = (double) tableModel.getValueAt(selectedRow, 1);
         double eps = (double) tableModel.getValueAt(selectedRow, 2);
 
+        long startTime = System.currentTimeMillis();
         double result = trapezoidMethod(lowerBound, upperBound, eps);
+        long endTime = System.currentTimeMillis();
+        long timeElapsed = endTime - startTime;
+        System.out.println("execute time: " + timeElapsed);
+
         tableModel.setValueAt(result, selectedRow, 3);
 
         recIntegral.get(selectedRow).setResult(result); //добавление результата в объект коллекции
